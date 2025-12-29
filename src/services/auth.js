@@ -1,33 +1,19 @@
 // src/services/auth.js
 import api from './api';
 
-export const login = async (credentials) => {
-  try {
-    const response = await api.post('/auth/login', credentials);
-    return response.data;
-  } catch (error) {
-    throw error.response?.data?.message || 'Login failed';
-  }
+// POST /api/auth/login
+export function loginRequest({ email, password }) {
+  return api.post('/auth/login', { email, password });
+}
+
+// POST /api/auth/signup
+export function signupRequest({ username, email, password }) {
+  return api.post('/auth/signup', { username, email, password });
+}
+
+const authService = {
+  loginRequest,
+  signupRequest,
 };
 
-export const signup = async (userData) => {
-  try {
-    const response = await api.post('/auth/signup', userData);
-    return response.data;
-  } catch (error) {
-    throw error.response?.data?.message || 'Registration failed';
-  }
-};
-
-export const verifyToken = async () => {
-  try {
-    const response = await api.get('/auth/verify');
-    return response.data;
-  } catch (error) {
-    throw error.response?.data?.message || 'Token verification failed';
-  }
-};
-
-export const logout = () => {
-  localStorage.removeItem('token');
-};
+export default authService;

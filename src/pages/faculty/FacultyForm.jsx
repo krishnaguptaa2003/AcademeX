@@ -1,291 +1,467 @@
-import { useForm } from 'react-hook-form'
-import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import axios from 'axios'
-// src/components/forms/FacultyForm.jsx
-import { ArrowLeftIcon } from '@heroicons/react/24/outline';
-import { CheckIcon } from '@heroicons/react/24/solid'; // Use CheckIcon instead of SaveIcon
-import Button from '../../components/ui/Button'
-import Card from '../../components/ui/Card'
-import { useToast } from '../../contexts/ToastContext'
+// src\pages\faculty\FacultyForm.jsx
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
+import { useToast } from "../../contexts/ToastContext";
+import Card from "../../components/ui/Card";
+import Button from "../../components/ui/Button";
+import {
+  UserCircleIcon,
+  IdentificationIcon,
+  AcademicCapIcon,
+  BuildingLibraryIcon,
+  EnvelopeIcon,
+  PhoneIcon,
+  CalendarIcon,
+  CurrencyDollarIcon,
+  ArrowLeftIcon,
+  CheckCircleIcon
+} from "@heroicons/react/24/outline";
 
-function FacultyForm() {
-  const { id } = useParams()
-  const navigate = useNavigate()
-  const { addToast } = useToast()
-  const { register, handleSubmit, reset, formState: { errors } } = useForm()
-  const [loading, setLoading] = useState(false)
-
-  const isEdit = !!id
+export default function FacultyForm() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { addToast } = useToast();
+  const isEdit = Boolean(id);
+  
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [departments, setDepartments] = useState([]);
+  
+  const [form, setForm] = useState({
+    employeeId: "",
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    departmentId: "",
+    designation: "",
+    qualification: "",
+    dateOfJoining: new Date().toISOString().split('T')[0],
+    salary: "",
+    facultyLevel: "PROFESSOR",
+    address: "",
+    subjects: []
+  });
 
   useEffect(() => {
+    loadDepartments();
     if (isEdit) {
-      const fetchFaculty = async () => {
-        try {
-          const response = await axios.get(`/api/faculty/${id}`)
-          reset(response.data)
-        } catch (err) {
-          addToast('Failed to fetch faculty data', 'error')
-        }
-      }
-      fetchFaculty()
+      loadFacultyDetails();
     }
-  }, [id, isEdit, reset, addToast])
+  }, [id]);
 
-  const onSubmit = async (data) => {
-    setLoading(true)
+  const loadDepartments = async () => {
+    try {
+      // Mock departments - in real app, fetch from API
+      const mockDepartments = [
+        { id: 1, name: "Computer Science", code: "CS" },
+        { id: 2, name: "Electrical Engineering", code: "EE" },
+        { id: 3, name: "Mechanical Engineering", code: "ME" },
+        { id: 4, name: "Civil Engineering", code: "CE" },
+        { id: 5, name: "Business Administration", code: "MBA" }
+      ];
+      setDepartments(mockDepartments);
+    } catch (error) {
+      addToast("Failed to load departments", "error");
+    }
+  };
+
+  const loadFacultyDetails = async () => {
+    setLoading(true);
+    try {
+      // Mock faculty data for edit
+      const mockFaculty = {
+        id: id,
+        employeeId: "FAC1001",
+        firstName: "Anjali",
+        lastName: "Mehta",
+        email: "anjali.mehta@example.com",
+        phone: "9876543210",
+        departmentId: "1",
+        designation: "Professor",
+        qualification: "Ph.D. in Computer Science",
+        dateOfJoining: "2020-06-15",
+        salary: "85000",
+        facultyLevel: "PROFESSOR",
+        address: "123 Faculty Lane, Mumbai",
+        subjects: ["Data Structures", "Algorithms"]
+      };
+      setForm(mockFaculty);
+    } catch (error) {
+      addToast("Failed to load faculty details", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    if (type === 'checkbox') {
+      setForm(prev => ({
+        ...prev,
+        subjects: checked 
+          ? [...prev.subjects, value]
+          : prev.subjects.filter(sub => sub !== value)
+      }));
+    } else {
+      setForm(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
     
     try {
-      if (isEdit) {
-        await axios.put(`/api/faculty/${id}`, data)
-        addToast('Faculty updated successfully', 'success')
-      } else {
-        await axios.post('/api/faculty', data)
-        addToast('Faculty added successfully', 'success')
+      // Validate form
+      if (!form.employeeId || !form.firstName || !form.email || !form.departmentId) {
+        addToast("Please fill all required fields", "error");
+        setSaving(false);
+        return;
       }
-      navigate('/faculty')
-    } catch (err) {
-      addToast(err.response?.data?.message || 'Failed to save faculty', 'error')
+
+      // Simulate API call
+      setTimeout(() => {
+        addToast(
+          `Faculty ${isEdit ? "updated" : "added"} successfully!`,
+          "success"
+        );
+        navigate("/faculty");
+      }, 1500);
+      
+    } catch (error) {
+      addToast("Failed to save faculty details", "error");
     } finally {
-      setLoading(false)
+      setSaving(false);
     }
+  };
+
+  const availableSubjects = [
+    "Data Structures", "Algorithms", "Database Systems", 
+    "Computer Networks", "Operating Systems", "Software Engineering",
+    "Discrete Mathematics", "Artificial Intelligence", "Machine Learning"
+  ];
+
+  const facultyLevels = [
+    { value: "PROFESSOR", label: "Professor" },
+    { value: "ASSOCIATE_PROFESSOR", label: "Associate Professor" },
+    { value: "ASSISTANT_PROFESSOR", label: "Assistant Professor" },
+    { value: "LECTURER", label: "Lecturer" },
+    { value: "HOD", label: "Head of Department" },
+    { value: "DEAN", label: "Dean" }
+  ];
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center">
-        <Button variant="secondary" onClick={() => navigate('/faculty')}>
-          <ArrowLeftIcon className="h-5 w-5 mr-2" />
-          Back to Faculty
-        </Button>
-        <h1 className="text-2xl font-bold ml-4">
-          {isEdit ? 'Edit Faculty Member' : 'Add New Faculty Member'}
-        </h1>
-      </div>
-
-      <Card>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-            {/* Employee ID */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Employee ID
-              </label>
-              <input
-                type="text"
-                {...register('employeeId', { required: 'Employee ID is required' })}
-                className={`mt-1 block w-full rounded-md border ${
-                  errors.employeeId ? 'border-red-300' : 'border-gray-300'
-                } shadow-sm focus:border-primary focus:ring-primary sm:text-sm`}
-              />
-              {errors.employeeId && (
-                <p className="mt-1 text-sm text-red-600">{errors.employeeId.message}</p>
-              )}
-            </div>
-
-            {/* Full Name */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Full Name
-              </label>
-              <input
-                type="text"
-                {...register('name', { required: 'Full name is required' })}
-                className={`mt-1 block w-full rounded-md border ${
-                  errors.name ? 'border-red-300' : 'border-gray-300'
-                } shadow-sm focus:border-primary focus:ring-primary sm:text-sm`}
-              />
-              {errors.name && (
-                <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
-              )}
-            </div>
-
-            {/* Department */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Department
-              </label>
-              <select
-                {...register('department', { required: 'Department is required' })}
-                className={`mt-1 block w-full rounded-md border ${
-                  errors.department ? 'border-red-300' : 'border-gray-300'
-                } py-2 pl-3 pr-10 text-base focus:border-primary focus:outline-none focus:ring-primary sm:text-sm`}
-              >
-                <option value="">Select department</option>
-                <option value="Computer Science">Computer Science</option>
-                <option value="Electrical Engineering">Electrical Engineering</option>
-                <option value="Mechanical Engineering">Mechanical Engineering</option>
-                <option value="Civil Engineering">Civil Engineering</option>
-                <option value="Mathematics">Mathematics</option>
-                <option value="Physics">Physics</option>
-                <option value="Chemistry">Chemistry</option>
-              </select>
-              {errors.department && (
-                <p className="mt-1 text-sm text-red-600">{errors.department.message}</p>
-              )}
-            </div>
-
-            {/* Designation */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Designation
-              </label>
-              <select
-                {...register('designation', { required: 'Designation is required' })}
-                className={`mt-1 block w-full rounded-md border ${
-                  errors.designation ? 'border-red-300' : 'border-gray-300'
-                } py-2 pl-3 pr-10 text-base focus:border-primary focus:outline-none focus:ring-primary sm:text-sm`}
-              >
-                <option value="">Select designation</option>
-                <option value="Professor">Professor</option>
-                <option value="Associate Professor">Associate Professor</option>
-                <option value="Assistant Professor">Assistant Professor</option>
-                <option value="Lecturer">Lecturer</option>
-                <option value="Visiting Faculty">Visiting Faculty</option>
-              </select>
-              {errors.designation && (
-                <p className="mt-1 text-sm text-red-600">{errors.designation.message}</p>
-              )}
-            </div>
-
-            {/* Contact Information */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Email Address
-              </label>
-              <input
-                type="email"
-                {...register('email', {
-                  required: 'Email is required',
-                  pattern: {
-                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: 'Please enter a valid email address'
-                  }
-                })}
-                className={`mt-1 block w-full rounded-md border ${
-                  errors.email ? 'border-red-300' : 'border-gray-300'
-                } shadow-sm focus:border-primary focus:ring-primary sm:text-sm`}
-              />
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Phone Number
-              </label>
-              <input
-                type="tel"
-                {...register('phone', {
-                  required: 'Phone number is required',
-                  pattern: {
-                    value: /^[0-9]{10}$/,
-                    message: 'Please enter a valid 10-digit phone number'
-                  }
-                })}
-                className={`mt-1 block w-full rounded-md border ${
-                  errors.phone ? 'border-red-300' : 'border-gray-300'
-                } shadow-sm focus:border-primary focus:ring-primary sm:text-sm`}
-              />
-              {errors.phone && (
-                <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>
-              )}
-            </div>
-
-            {/* Qualification */}
-            <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Qualification
-              </label>
-              <input
-                type="text"
-                {...register('qualification', { required: 'Qualification is required' })}
-                className={`mt-1 block w-full rounded-md border ${
-                  errors.qualification ? 'border-red-300' : 'border-gray-300'
-                } shadow-sm focus:border-primary focus:ring-primary sm:text-sm`}
-              />
-              {errors.qualification && (
-                <p className="mt-1 text-sm text-red-600">{errors.qualification.message}</p>
-              )}
-            </div>
-
-            {/* Specialization */}
-            <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Specialization
-              </label>
-              <input
-                type="text"
-                {...register('specialization', { required: 'Specialization is required' })}
-                className={`mt-1 block w-full rounded-md border ${
-                  errors.specialization ? 'border-red-300' : 'border-gray-300'
-                } shadow-sm focus:border-primary focus:ring-primary sm:text-sm`}
-              />
-              {errors.specialization && (
-                <p className="mt-1 text-sm text-red-600">{errors.specialization.message}</p>
-              )}
-            </div>
-
-            {/* Joining Date */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Joining Date
-              </label>
-              <input
-                type="date"
-                {...register('joiningDate', { required: 'Joining date is required' })}
-                className={`mt-1 block w-full rounded-md border ${
-                  errors.joiningDate ? 'border-red-300' : 'border-gray-300'
-                } shadow-sm focus:border-primary focus:ring-primary sm:text-sm`}
-              />
-              {errors.joiningDate && (
-                <p className="mt-1 text-sm text-red-600">{errors.joiningDate.message}</p>
-              )}
-            </div>
-
-            {/* Experience */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Experience (Years)
-              </label>
-              <input
-                type="number"
-                min="0"
-                {...register('experience', {
-                  required: 'Experience is required',
-                  min: { value: 0, message: 'Experience cannot be negative' }
-                })}
-                className={`mt-1 block w-full rounded-md border ${
-                  errors.experience ? 'border-red-300' : 'border-gray-300'
-                } shadow-sm focus:border-primary focus:ring-primary sm:text-sm`}
-              />
-              {errors.experience && (
-                <p className="mt-1 text-sm text-red-600">{errors.experience.message}</p>
-              )}
-            </div>
-          </div>
-
-          <div className="flex justify-end space-x-3">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 p-4 sm:p-6 lg:p-8">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-4 mb-6">
             <Button
-              type="button"
               variant="secondary"
-              onClick={() => navigate('/faculty')}
+              onClick={() => navigate(-1)}
             >
-              Cancel
+              <ArrowLeftIcon className="h-4 w-4 mr-2" />
+              Back
             </Button>
-            <Button
-              type="submit"
-              disabled={loading}
-            >
-              <SaveIcon className="h-5 w-5 mr-2" />
-              {loading ? 'Saving...' : 'Save'}
-            </Button>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                {isEdit ? "Edit Faculty Member" : "Add New Faculty"}
+              </h1>
+              <p className="mt-1 text-sm text-gray-500">
+                {isEdit 
+                  ? "Update faculty member information"
+                  : "Register a new faculty member in the system"}
+              </p>
+            </div>
           </div>
-        </form>
-      </Card>
-    </div>
-  )
-}
+        </div>
 
-export default FacultyForm;
+        {/* Form */}
+        <Card className="border-0 shadow-lg">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Personal Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <UserCircleIcon className="h-5 w-5 mr-2 text-blue-500" />
+                Personal Information
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Employee ID *
+                  </label>
+                  <input
+                    type="text"
+                    name="employeeId"
+                    value={form.employeeId}
+                    onChange={handleChange}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:ring-primary"
+                    required
+                    placeholder="FAC1001"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Faculty Level
+                  </label>
+                  <select
+                    name="facultyLevel"
+                    value={form.facultyLevel}
+                    onChange={handleChange}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:ring-primary"
+                  >
+                    {facultyLevels.map(level => (
+                      <option key={level.value} value={level.value}>
+                        {level.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    First Name *
+                  </label>
+                  <input
+                    type="text"
+                    name="firstName"
+                    value={form.firstName}
+                    onChange={handleChange}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:ring-primary"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Last Name *
+                  </label>
+                  <input
+                    type="text"
+                    name="lastName"
+                    value={form.lastName}
+                    onChange={handleChange}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:ring-primary"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email Address *
+                  </label>
+                  <div className="relative">
+                    <EnvelopeIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="email"
+                      name="email"
+                      value={form.email}
+                      onChange={handleChange}
+                      className="w-full pl-10 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:ring-primary"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Phone Number *
+                  </label>
+                  <div className="relative">
+                    <PhoneIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={form.phone}
+                      onChange={handleChange}
+                      className="w-full pl-10 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:ring-primary"
+                      required
+                      pattern="[0-9]{10}"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Professional Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <AcademicCapIcon className="h-5 w-5 mr-2 text-green-500" />
+                Professional Information
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Department *
+                  </label>
+                  <select
+                    name="departmentId"
+                    value={form.departmentId}
+                    onChange={handleChange}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:ring-primary"
+                    required
+                  >
+                    <option value="">Select Department</option>
+                    {departments.map(dept => (
+                      <option key={dept.id} value={dept.id}>
+                        {dept.name} ({dept.code})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Designation *
+                  </label>
+                  <input
+                    type="text"
+                    name="designation"
+                    value={form.designation}
+                    onChange={handleChange}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:ring-primary"
+                    required
+                    placeholder="e.g., Professor"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Qualification *
+                </label>
+                <input
+                  type="text"
+                  name="qualification"
+                  value={form.qualification}
+                  onChange={handleChange}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:ring-primary"
+                  required
+                  placeholder="e.g., Ph.D. in Computer Science"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Date of Joining
+                  </label>
+                  <div className="relative">
+                    <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="date"
+                      name="dateOfJoining"
+                      value={form.dateOfJoining}
+                      onChange={handleChange}
+                      className="w-full pl-10 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:ring-primary"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Salary (₹)
+                  </label>
+                  <div className="relative">
+                    <CurrencyDollarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="number"
+                      name="salary"
+                      value={form.salary}
+                      onChange={handleChange}
+                      className="w-full pl-10 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:ring-primary"
+                      placeholder="e.g., 85000"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Subjects */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <BuildingLibraryIcon className="h-5 w-5 mr-2 text-purple-500" />
+                Subjects Specialization
+              </h3>
+              
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {availableSubjects.map(subject => (
+                  <label key={subject} className="flex items-center p-2 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      value={subject}
+                      checked={form.subjects.includes(subject)}
+                      onChange={handleChange}
+                      className="h-4 w-4 text-primary rounded focus:ring-primary"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">{subject}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Address */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900">Address</h3>
+              <textarea
+                name="address"
+                value={form.address}
+                onChange={handleChange}
+                rows={3}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:ring-primary"
+                placeholder="Enter complete address..."
+              />
+            </div>
+
+            {/* Form Actions */}
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => navigate("/faculty")}
+                disabled={saving}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={saving}
+                className="min-w-[120px]"
+              >
+                {saving ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircleIcon className="h-4 w-4 mr-2" />
+                    {isEdit ? "Update Faculty" : "Add Faculty"}
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+        </Card>
+      </div>
+    </div>
+  );
+}

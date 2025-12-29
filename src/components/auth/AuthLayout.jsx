@@ -1,3 +1,4 @@
+// src\components\auth\AuthLayout.jsx
 import { Outlet } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Navigate } from 'react-router-dom';

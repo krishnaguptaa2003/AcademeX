@@ -1,76 +1,130 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+// src/contexts/AuthContext.jsx (Enhanced)
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import axios from "axios";
+import { useToast } from "./ToastContext";
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
+  const { addToast } = useToast();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
 
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
+
+  // Load current user on mount
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      // Verify token with backend
-      axios.get('/api/auth/verify', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      .then(response => {
-        setUser(response.data.user);
-      })
-      .catch(() => {
-        localStorage.removeItem('token');
-      })
-      .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
-    }
-  }, []);
+    const loadCurrentUser = async () => {
+      try {
+        const token = localStorage.getItem("academex_token");
+        
+        if (!token) {
+          setLoading(false);
+          return;
+        }
 
-  const login = async (credentials) => {
+        const response = await axios.get(`${API_URL}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true,
+        });
+
+        if (response.data?.success) {
+          setUser(response.data.user);
+        } else {
+          localStorage.removeItem("academex_token");
+        }
+      } catch (error) {
+        console.error("Auth error:", error);
+        localStorage.removeItem("academex_token");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCurrentUser();
+  }, [API_URL]);
+
+  // Login function with faculty level support
+  const login = useCallback(async (credentials) => {
     try {
-      const response = await axios.post('/api/auth/login', credentials);
-      localStorage.setItem('token', response.data.token);
-      setUser(response.data.user);
-      navigate('/');
-      return { success: true };
-    } catch (error) {
-      return { 
-        success: false, 
-        message: error.response?.data?.message || 'Login failed' 
-      };
-    }
-  };
+      const response = await axios.post(`${API_URL}/auth/login`, credentials, {
+        withCredentials: true,
+      });
 
-  const signup = async (userData) => {
+      if (response.data?.success) {
+        const { user, token } = response.data;
+        
+        // Handle faculty level assignment
+        if (user.role === "FACULTY") {
+          // If backend doesn't provide facultyLevel, use the one from credentials
+          if (!user.facultyLevel && credentials.facultyLevel) {
+            user.facultyLevel = credentials.facultyLevel;
+          }
+        }
+        
+        localStorage.setItem("academex_token", token);
+        setUser(user);
+        addToast(`Welcome back, ${user.name || user.username}!`, "success");
+        return { success: true, user };
+      } else {
+        addToast(response.data?.message || "Login failed", "error");
+        return { success: false };
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      const message = error.response?.data?.message || "Login failed. Please try again.";
+      addToast(message, "error");
+      return { success: false };
+    }
+  }, [API_URL, addToast]);
+
+  // Logout function
+  const logout = useCallback(async () => {
     try {
-      const response = await axios.post('/api/auth/signup', userData);
-      localStorage.setItem('token', response.data.token);
-      setUser(response.data.user);
-      navigate('/');
-      return { success: true };
+      await axios.post(`${API_URL}/auth/logout`, {}, { withCredentials: true });
     } catch (error) {
-      return { 
-        success: false, 
-        message: error.response?.data?.message || 'Registration failed' 
-      };
+      console.error("Logout error:", error);
+    } finally {
+      setUser(null);
+      localStorage.removeItem("academex_token");
+      addToast("Logged out successfully", "info");
     }
-  };
+  }, [API_URL, addToast]);
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    setUser(null);
-    navigate('/login');
+  // Check permissions
+  const hasPermission = useCallback((requiredRole, requiredLevel = null) => {
+    if (!user) return false;
+    
+    if (user.role !== requiredRole) return false;
+    
+    if (requiredRole === "FACULTY" && requiredLevel && user.facultyLevel) {
+      const levels = { PROFESSOR: 1, HOD: 2, DEAN: 3 };
+      return levels[user.facultyLevel] >= levels[requiredLevel];
+    }
+    
+    return true;
+  }, [user]);
+
+  const value = {
+    user,
+    loading,
+    isAuthenticated: !!user,
+    login,
+    logout,
+    hasPermission,
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
 }
 
 export function useAuth() {
-  return useContext(AuthContext);
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
 }

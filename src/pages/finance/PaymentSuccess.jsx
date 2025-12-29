@@ -1,3 +1,4 @@
+// src\pages\finance\PaymentSuccess.jsx
 import { useLocation } from 'react-router-dom';
 import { CheckCircleIcon } from '@heroicons/react/24/outline';
 import Card from '../../components/ui/Card';
@@ -8,11 +9,11 @@ function PaymentSuccess() {
   const paymentDetails = state || {
     amount: 0,
     transactionId: 'N/A',
-    studentName: 'Unknown'
+    studentName: 'Unknown',
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center">
           <CheckCircleIcon className="mx-auto h-12 w-12 text-green-500" />
@@ -35,7 +36,9 @@ function PaymentSuccess() {
               </div>
               <div>
                 <p className="text-sm text-gray-500">Amount Paid</p>
-                <p className="font-medium">₹{paymentDetails.amount.toLocaleString()}</p>
+                <p className="font-medium">
+                  ₹{paymentDetails.amount.toLocaleString()}
+                </p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Transaction ID</p>
@@ -51,12 +54,8 @@ function PaymentSuccess() {
         </Card>
 
         <div className="mt-6">
-          <Button
-            as="link"
-            to="/students"
-            className="w-full"
-          >
-            Back to Dashboard
+          <Button as="link" to="/students" className="w-full">
+            Back to Students
           </Button>
         </div>
       </div>

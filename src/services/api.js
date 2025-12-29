@@ -1,17 +1,18 @@
 // src/services/api.js
-import axios from 'axios';
+import axios from "axios";
 
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
+
+// Create axios instance with default config
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  baseURL: API_BASE,
+  timeout: 10000, // 10 second timeout
 });
 
-// Request interceptor
+// Request interceptor - add auth token from localStorage
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("academex_token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -22,16 +23,18 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor
+// Response interceptor - handle errors globally
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+      // Unauthorized - clear token and redirect
+      localStorage.removeItem("academex_token");
+      window.location.href = "/login";
     }
     return Promise.reject(error);
   }
 );
 
 export default api;
+export { API_BASE };

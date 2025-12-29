@@ -1,159 +1,274 @@
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
-import { LockClosedIcon, UserIcon } from '@heroicons/react/24/outline'
-import { Link } from 'react-router-dom'; // Add this import at the top;
+// src/pages/auth/Login.jsx (Enhanced with faculty levels)
+import { useForm } from "react-hook-form";
+import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
+import { useState, useMemo } from "react";
+import { EyeIcon, EyeSlashIcon, AcademicCapIcon, UserIcon, ShieldCheckIcon } from "@heroicons/react/24/outline";
+
+const PORTALS = [
+  {
+    key: "STUDENT",
+    label: "Student Portal",
+    icon: AcademicCapIcon,
+    subtitle: "Access courses, attendance & results",
+    color: "from-blue-500 to-blue-600",
+  },
+  {
+    key: "FACULTY",
+    label: "Faculty Portal",
+    icon: UserIcon,
+    subtitle: "Manage classes, attendance & evaluations",
+    color: "from-emerald-500 to-emerald-600",
+  },
+  {
+    key: "ADMIN",
+    label: "Admin Portal",
+    icon: ShieldCheckIcon,
+    subtitle: "Oversee departments, fees & system settings",
+    color: "from-purple-500 to-purple-600",
+  },
+];
+
+const FACULTY_LEVELS = [
+  { value: "PROFESSOR", label: "Professor", description: "Regular faculty member" },
+  { value: "HOD", label: "Head of Department", description: "Department head with additional privileges" },
+  { value: "DEAN", label: "Dean", description: "Academic dean with administrative access" },
+];
 
 function Login() {
-    const { register, handleSubmit, formState: { errors } } = useForm()
-    const [error, setError] = useState('')
-    const [loading, setLoading] = useState(false)
-    const navigate = useNavigate()
+  const { register, handleSubmit, watch } = useForm();
+  const { login, authLoading } = useAuth();
+  const navigate = useNavigate();
+  const [activePortal, setActivePortal] = useState("STUDENT");
+  const [showPassword, setShowPassword] = useState(false);
+  const [selectedFacultyLevel, setSelectedFacultyLevel] = useState("PROFESSOR");
+  
+  const portalMeta = useMemo(
+    () => PORTALS.find((p) => p.key === activePortal),
+    [activePortal]
+  );
 
-    const onSubmit = async (data) => {
-        setLoading(true)
-        setError('')
+  const onSubmit = async (data) => {
+    const { email, password } = data;
 
-        try {
-            const response = await axios.post('/api/auth/login', data)
-            if (response.data.success) {
-                localStorage.setItem('token', response.data.token)
-                navigate('/dashboard')
-            } else {
-                setError(response.data.message || 'Login failed')
-            }
-        } catch (err) {
-            setError(err.response?.data?.message || 'An error occurred')
-        } finally {
-            setLoading(false)
-        }
+    // Add faculty level to credentials if faculty portal
+    const credentials = { email, password };
+    if (activePortal === "FACULTY") {
+      credentials.facultyLevel = selectedFacultyLevel;
     }
 
-    return (
-        <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-            <div className="sm:mx-auto sm:w-full sm:max-w-md">
-                <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-                    Sign in to your account
-                </h2>
-            </div>
+    const result = await login(credentials);
 
-            <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-                <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-                    {error && (
-                        <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4">
-                            <div className="flex">
-                                <div className="flex-shrink-0">
-                                    {/* Error icon */}
-                                </div>
-                                <div className="ml-3 text-sm text-red-700">
-                                    <p>{error}</p>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+    if (result?.success) {
+      navigate("/", { replace: true });
+    }
+  };
 
-                    <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-                        <div>
-                            <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-                                Username
-                            </label>
-                            <div className="mt-1 relative rounded-md shadow-sm">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <UserIcon className="h-5 w-5 text-gray-400" />
-                                </div>
-                                <input
-                                    id="username"
-                                    name="username"
-                                    type="text"
-                                    autoComplete="username"
-                                    {...register('username', { required: 'Username is required' })}
-                                    className={`block w-full pl-10 pr-3 py-2 border ${errors.username ? 'border-red-300' : 'border-gray-300'
-                                        } rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm`}
-                                />
-                            </div>
-                            {errors.username && (
-                                <p className="mt-2 text-sm text-red-600">{errors.username.message}</p>
-                            )}
-                        </div>
-
-                        <div>
-                            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                                Password
-                            </label>
-                            <div className="mt-1 relative rounded-md shadow-sm">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <LockClosedIcon className="h-5 w-5 text-gray-400" />
-                                </div>
-                                <input
-                                    id="password"
-                                    name="password"
-                                    type="password"
-                                    autoComplete="current-password"
-                                    {...register('password', { required: 'Password is required' })}
-                                    className={`block w-full pl-10 pr-3 py-2 border ${errors.password ? 'border-red-300' : 'border-gray-300'
-                                        } rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm`}
-                                />
-                            </div>
-                            {errors.password && (
-                                <p className="mt-2 text-sm text-red-600">{errors.password.message}</p>
-                            )}
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center">
-                                <input
-                                    id="remember-me"
-                                    name="remember-me"
-                                    type="checkbox"
-                                    className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
-                                />
-                                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
-                                    Remember me
-                                </label>
-                            </div>
-
-                            <div className="text-sm">
-                                <a href="#" className="font-medium text-primary hover:text-primary-dark">
-                                    Forgot your password?
-                                </a>
-                            </div>
-                        </div>
-
-                        <div>
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary ${loading ? 'opacity-75 cursor-not-allowed' : ''
-                                    }`}
-                            >
-                                {loading ? 'Signing in...' : 'Sign in'}
-                            </button>
-                        </div>
-                    </form>
-
-                    <div className="mt-6">
-                        <div className="relative">
-                            <div className="absolute inset-0 flex items-center">
-                                <div className="w-full border-t border-gray-300" />
-                            </div>
-                            <div className="relative flex justify-center text-sm">
-                                <span className="px-2 bg-white text-gray-500">
-                                    Or{' '}
-                                    <Link
-                                        to="/signup"
-                                        className="font-medium text-primary hover:text-primary-dark"
-                                    >
-                                        create a new account
-                                    </Link>
-                                </span>
-                            </div>
-                        </div>
-                    </div>
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-950 p-4">
+      <div className="w-full max-w-6xl rounded-3xl bg-slate-900/80 text-white shadow-2xl border border-slate-800/60 overflow-hidden">
+        <div className="flex flex-col lg:flex-row">
+          {/* Left side - Brand Panel */}
+          <div className={`hidden lg:flex w-1/2 flex-col justify-between p-10 bg-gradient-to-br ${portalMeta?.color || 'from-blue-600 to-blue-800'} relative overflow-hidden`}>
+            <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:20px_20px]" />
+            <div className="relative z-10">
+              <div className="flex items-center gap-3 mb-8">
+                <div className="h-12 w-12 rounded-xl bg-white/20 border border-white/30 flex items-center justify-center font-bold text-xl backdrop-blur-sm">
+                  AX
                 </div>
+                <div>
+                  <div className="text-2xl font-bold">AcademeX</div>
+                  <div className="text-sm text-white/80">University Management System</div>
+                </div>
+              </div>
+
+              <h2 className="text-3xl font-bold mb-4">Welcome to {portalMeta?.label.split(' ')[0]}</h2>
+              <p className="text-white/90 mb-6">
+                {activePortal === "STUDENT" && "Track your academic journey, attendance, and performance in one unified dashboard."}
+                {activePortal === "FACULTY" && "Manage your classes, evaluate students, and collaborate with colleagues efficiently."}
+                {activePortal === "ADMIN" && "Oversee institutional operations with comprehensive analytics and control."}
+              </p>
+
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-white" />
+                  <span className="text-sm">Role-based access control</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-white" />
+                  <span className="text-sm">Real-time collaboration</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-white" />
+                  <span className="text-sm">Secure & scalable platform</span>
+                </div>
+              </div>
             </div>
+
+            <div className="relative z-10 text-sm text-white/60">
+              © {new Date().getFullYear()} AcademeX. All rights reserved.
+            </div>
+          </div>
+
+          {/* Right side - Login Form */}
+          <div className="w-full lg:w-1/2 p-8 sm:p-10">
+            <div className="mb-8">
+              <div className="flex items-start justify-between mb-6">
+                <div>
+                  <p className="text-sm uppercase tracking-widest text-slate-400 mb-2">Sign In</p>
+                  <h1 className="text-2xl sm:text-3xl font-bold">Access Your Portal</h1>
+                </div>
+                <div className="text-xs text-slate-400">
+                  New here?{" "}
+                  <Link to="/signup" className="text-blue-300 hover:text-blue-200 font-medium">
+                    Create account
+                  </Link>
+                </div>
+              </div>
+
+              {/* Portal Selector */}
+              <div className="flex gap-1 p-1 bg-slate-800/50 rounded-xl mb-6">
+                {PORTALS.map((portal) => {
+                  const isActive = portal.key === activePortal;
+                  return (
+                    <button
+                      key={portal.key}
+                      type="button"
+                      onClick={() => setActivePortal(portal.key)}
+                      className={`flex-1 flex flex-col items-center py-3 rounded-lg transition-all ${
+                        isActive
+                          ? 'bg-white/10 shadow-lg'
+                          : 'hover:bg-white/5'
+                      }`}
+                    >
+                      <portal.icon className={`h-5 w-5 mb-2 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                      <span className={`text-xs font-medium ${isActive ? 'text-white' : 'text-slate-400'}`}>
+                        {portal.label.split(' ')[0]}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <p className="text-sm text-slate-300">
+                {portalMeta?.subtitle}
+              </p>
+            </div>
+
+            {/* Faculty Level Selection (only for faculty portal) */}
+            {activePortal === "FACULTY" && (
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-slate-300 mb-3">
+                  Select Faculty Level
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {FACULTY_LEVELS.map((level) => (
+                    <button
+                      key={level.value}
+                      type="button"
+                      onClick={() => setSelectedFacultyLevel(level.value)}
+                      className={`py-2 px-3 rounded-lg text-sm text-center transition-all ${
+                        selectedFacultyLevel === level.value
+                          ? 'bg-emerald-500 text-white shadow-lg'
+                          : 'bg-slate-800/50 text-slate-300 hover:bg-slate-800'
+                      }`}
+                    >
+                      <div className="font-medium">{level.label}</div>
+                      <div className="text-xs opacity-75">{level.description}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  placeholder="you@university.edu"
+                  autoComplete="email"
+                  className="w-full rounded-xl bg-slate-800/50 border border-slate-700 px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  {...register("email", { required: true })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    autoComplete="current-password"
+                    className="w-full rounded-xl bg-slate-800/50 border border-slate-700 px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    {...register("password", { required: true })}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-300"
+                  >
+                    {showPassword ? (
+                      <EyeSlashIcon className="h-5 w-5" />
+                    ) : (
+                      <EyeIcon className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-slate-600 bg-slate-800 text-blue-500 focus:ring-blue-500"
+                  />
+                  Remember me
+                </label>
+                <button
+                  type="button"
+                  className="text-sm text-blue-300 hover:text-blue-200"
+                  onClick={() => navigate("/forgot-password")}
+                >
+                  Forgot password?
+                </button>
+              </div>
+
+              <button
+                type="submit"
+                disabled={authLoading}
+                className={`w-full rounded-xl py-3.5 text-sm font-semibold text-white shadow-lg transition-all ${
+                  activePortal === "STUDENT" ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800' :
+                  activePortal === "FACULTY" ? 'bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800' :
+                  'bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                {authLoading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    Signing in...
+                  </span>
+                ) : (
+                  `Sign in to ${portalMeta?.label}`
+                )}
+              </button>
+
+              <div className="pt-4 border-t border-slate-800">
+                <p className="text-xs text-slate-400 text-center">
+                  Your access level is automatically determined by your institutional role.
+                  {activePortal === "FACULTY" && " Faculty levels grant different permissions."}
+                </p>
+              </div>
+            </form>
+          </div>
         </div>
-    );
+      </div>
+    </div>
+  );
 }
 
 export default Login;

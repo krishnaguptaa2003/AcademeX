@@ -1,51 +1,73 @@
-import { useForm } from 'react-hook-form'
-import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import axios from 'axios'
-import { ArrowLeftIcon, SaveIcon } from '@heroicons/react/24/outline'
-import Button from '../../components/ui/Button'
-import Card from '../../components/ui/Card'
+// src/pages/students/StudentForm.jsx
+// src/pages/students/StudentForm.jsx
+import { useForm } from 'react-hook-form';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { CheckIcon as SaveIcon } from '@heroicons/react/24/solid';
+import Button from '../../components/ui/Button';
+import Card from '../../components/ui/Card';
+import { useToast } from '../../contexts/ToastContext';
 
 function StudentForm() {
-  const { id } = useParams()
-  const navigate = useNavigate()
-  const { register, handleSubmit, reset, formState: { errors } } = useForm()
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { register, handleSubmit, reset, formState: { errors } } = useForm();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [departments, setDepartments] = useState([]);
+  const { addToast } = useToast();
 
-  const isEdit = !!id
+  const isEdit = !!id;
 
   useEffect(() => {
+    loadDepartments();
     if (isEdit) {
-      const fetchStudent = async () => {
-        try {
-          const response = await axios.get(`/api/students/${id}`)
-          reset(response.data)
-        } catch (err) {
-          setError('Failed to fetch student data')
-        }
-      }
-      fetchStudent()
+      loadStudentData();
     }
-  }, [id, isEdit, reset])
+  }, [id, isEdit]);
+
+  const loadDepartments = async () => {
+    try {
+      const mockDepartments = [
+        { id: 1, name: "Computer Science", courses: ["B.Tech CSE", "M.Tech CSE"] },
+        { id: 2, name: "Electrical Engineering", courses: ["B.Tech EE", "M.Tech EE"] },
+        { id: 3, name: "Mechanical Engineering", courses: ["B.Tech ME", "M.Tech ME"] },
+        { id: 4, name: "Civil Engineering", courses: ["B.Tech CE", "M.Tech CE"] },
+      ];
+      setDepartments(mockDepartments);
+    } catch (error) {
+      addToast('Failed to load departments', 'error');
+    }
+  };
+
+  const loadStudentData = async () => {
+    try {
+      const response = await axios.get(`/api/students/${id}`);
+      reset(response.data);
+    } catch (err) {
+      setError('Failed to fetch student data');
+    }
+  };
 
   const onSubmit = async (data) => {
-    setLoading(true)
-    setError('')
-    
+    setLoading(true);
+    setError('');
+
     try {
       if (isEdit) {
-        await axios.put(`/api/students/${id}`, data)
+        await axios.put(`/api/students/${id}`, data);
       } else {
-        await axios.post('/api/students', data)
+        await axios.post('/api/students', data);
       }
-      navigate('/students')
+      navigate('/students');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to save student')
+      setError(err.response?.data?.message || 'Failed to save student');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="space-y-6">
@@ -157,7 +179,7 @@ function StudentForm() {
               )}
             </div>
 
-            {/* Contact Information */}
+            {/* Phone */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 Phone Number
@@ -168,8 +190,8 @@ function StudentForm() {
                   required: 'Phone number is required',
                   pattern: {
                     value: /^[0-9]{10}$/,
-                    message: 'Please enter a valid 10-digit phone number'
-                  }
+                    message: 'Please enter a valid 10-digit phone number',
+                  },
                 })}
                 className={`mt-1 block w-full rounded-md border ${
                   errors.phone ? 'border-red-300' : 'border-gray-300'
@@ -180,6 +202,7 @@ function StudentForm() {
               )}
             </div>
 
+            {/* Email */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 Email Address
@@ -190,8 +213,8 @@ function StudentForm() {
                   required: 'Email is required',
                   pattern: {
                     value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: 'Please enter a valid email address'
-                  }
+                    message: 'Please enter a valid email address',
+                  },
                 })}
                 className={`mt-1 block w-full rounded-md border ${
                   errors.email ? 'border-red-300' : 'border-gray-300'
@@ -202,7 +225,7 @@ function StudentForm() {
               )}
             </div>
 
-            {/* Academic Information */}
+            {/* Branch */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 Branch
@@ -224,6 +247,7 @@ function StudentForm() {
               )}
             </div>
 
+            {/* Course */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 Course
@@ -245,7 +269,7 @@ function StudentForm() {
               )}
             </div>
 
-            {/* Previous Academic Performance */}
+            {/* Class X Percentage */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 Class X Percentage
@@ -258,7 +282,7 @@ function StudentForm() {
                 {...register('classX', {
                   required: 'Class X percentage is required',
                   min: { value: 0, message: 'Percentage must be at least 0' },
-                  max: { value: 100, message: 'Percentage cannot exceed 100' }
+                  max: { value: 100, message: 'Percentage cannot exceed 100' },
                 })}
                 className={`mt-1 block w-full rounded-md border ${
                   errors.classX ? 'border-red-300' : 'border-gray-300'
@@ -269,6 +293,7 @@ function StudentForm() {
               )}
             </div>
 
+            {/* Class XII Percentage */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 Class XII Percentage
@@ -281,7 +306,7 @@ function StudentForm() {
                 {...register('classXII', {
                   required: 'Class XII percentage is required',
                   min: { value: 0, message: 'Percentage must be at least 0' },
-                  max: { value: 100, message: 'Percentage cannot exceed 100' }
+                  max: { value: 100, message: 'Percentage cannot exceed 100' },
                 })}
                 className={`mt-1 block w-full rounded-md border ${
                   errors.classXII ? 'border-red-300' : 'border-gray-300'
@@ -303,8 +328,8 @@ function StudentForm() {
                   required: 'Aadhar number is required',
                   pattern: {
                     value: /^[0-9]{12}$/,
-                    message: 'Please enter a valid 12-digit Aadhar number'
-                  }
+                    message: 'Please enter a valid 12-digit Aadhar number',
+                  },
                 })}
                 className={`mt-1 block w-full rounded-md border ${
                   errors.aadhar ? 'border-red-300' : 'border-gray-300'
@@ -316,6 +341,7 @@ function StudentForm() {
             </div>
           </div>
 
+          {/* Actions */}
           <div className="flex justify-end space-x-3">
             <Button
               type="button"
@@ -324,10 +350,7 @@ function StudentForm() {
             >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={loading}
-            >
+            <Button type="submit" disabled={loading}>
               <SaveIcon className="h-5 w-5 mr-2" />
               {loading ? 'Saving...' : 'Save'}
             </Button>
@@ -335,7 +358,7 @@ function StudentForm() {
         </form>
       </Card>
     </div>
-  )
+  );
 }
 
 export default StudentForm;

@@ -1,3 +1,4 @@
+// src\pages\students\StudentDetails.jsx
 import { useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
@@ -97,12 +98,21 @@ function StudentDetails() {
         </div>
 
         <div className="mt-6 pt-6 border-t border-gray-200">
-          <Link
-            to={`/students/${id}/edit`}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-          >
-            Edit Student
-          </Link>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              to={`/students/${id}/edit`}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            >
+              Edit Student
+            </Link>
+
+            <Link
+              to={`/finance/collect/${id}`}  // ✅ properly bound
+              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            >
+              Collect Fee
+            </Link>
+          </div>
         </div>
       </Card>
     </div>

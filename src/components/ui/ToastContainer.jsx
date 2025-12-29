@@ -1,54 +1,49 @@
-import { XMarkIcon } from '@heroicons/react/24/outline';
+// src/components/ui/ToastContainer.jsx
+import { XMarkIcon, CheckCircleIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
 import { useToast } from '../../contexts/ToastContext';
 
 export default function ToastContainer() {
-  const { toasts = [], removeToast } = useToast(); // Provide default empty array
-  
-  if (!toasts || toasts.length === 0) return null; // Early return if no toasts
+  const { toasts = [], removeToast } = useToast();
+
+  if (!toasts || toasts.length === 0) return null;
 
   return (
-    <div className="fixed top-4 right-4 z-50 space-y-2 w-80">
-      {toasts.map((toast) => (
-        <div
-          key={toast.id}
-          className={`p-4 rounded-md shadow-lg ${
-            toast.type === 'error'
-              ? 'bg-red-50 border-l-4 border-red-500'
-              : 'bg-green-50 border-l-4 border-green-500'
-          }`}
-        >
-          <div className="flex">
-            <div className="flex-shrink-0">
-              {toast.type === 'error' ? (
-                <XMarkIcon className="h-5 w-5 text-red-500" />
+    <div className="fixed top-4 right-4 z-50 space-y-3 w-80">
+      {toasts.map((toast) => {
+        const isError = toast.type === 'error';
+        return (
+          <div
+            key={toast.id}
+            className={`pointer-events-auto flex w-full max-w-sm rounded-lg shadow-lg ring-1 ring-black/5 px-4 py-3 bg-white animate-slide-in`}
+          >
+            <div className="flex-shrink-0 mt-0.5">
+              {isError ? (
+                <ExclamationCircleIcon className="h-5 w-5 text-red-500" />
               ) : (
-                <XMarkIcon className="h-5 w-5 text-green-500" />
+                <CheckCircleIcon className="h-5 w-5 text-emerald-500" />
               )}
             </div>
-            <div className="ml-3">
+            <div className="ml-3 flex-1">
               <p
-                className={`text-sm font-medium ${
-                  toast.type === 'error' ? 'text-red-800' : 'text-green-800'
+                className={`text-sm ${
+                  isError ? 'text-red-800' : 'text-gray-900'
                 }`}
               >
                 {toast.message}
               </p>
             </div>
-            <div className="ml-auto pl-3">
+            <div className="ml-3 flex-shrink-0">
               <button
                 onClick={() => removeToast(toast.id)}
-                className={`-mx-1.5 -my-1.5 p-1.5 rounded-md inline-flex ${
-                  toast.type === 'error'
-                    ? 'bg-red-50 text-red-500 hover:bg-red-100'
-                    : 'bg-green-50 text-green-500 hover:bg-green-100'
-                }`}
+                className="inline-flex rounded-md p-1 text-gray-400 hover:text-gray-600 focus:outline-none"
               >
+                <span className="sr-only">Close</span>
                 <XMarkIcon className="h-5 w-5" />
               </button>
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

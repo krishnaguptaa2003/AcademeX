@@ -1,10 +1,12 @@
-import { useForm } from 'react-hook-form';
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { CalendarIcon } from '@heroicons/react/24/outline';
-import Button from '../ui/Button';
-import Card from '../ui/Card';
-import { useToast } from '../../contexts/ToastContext';
+// src\pages\attendance\LeaveForm.jsx
+import { useForm } from "react-hook-form";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { CalendarIcon } from "@heroicons/react/24/outline";
+import Button from "../../components/ui/Button";
+import Card from "../../components/ui/Card";
+import { useToast } from "../../contexts/ToastContext";
+
 
 function LeaveForm() {
   const { register, handleSubmit, formState: { errors } } = useForm();

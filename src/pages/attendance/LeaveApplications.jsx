@@ -1,183 +1,284 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+// src/pages/attendance/LeaveApplications.jsx
+import { useEffect, useMemo, useState } from "react";
+import api from "../../services/api";
+import { useToast } from "../../contexts/ToastContext";
 
-const leaveApplications = [
+const DEMO = [
   {
     id: 1,
-    applicantId: '2023001',
-    applicantName: 'John Doe',
-    type: 'Medical',
-    startDate: '2023-02-01',
-    endDate: '2023-02-03',
-    reason: 'Fever and cold',
-    status: 'Approved',
-    appliedOn: '2023-01-30',
+    applicantId: "2023001",
+    applicantName: "John Doe",
+    leaveType: "Medical",
+    dates: "2023-02-01 to 2023-02-03",
+    reason: "Fever and cold",
+    appliedOn: "2023-01-30",
+    status: "APPROVED",
   },
   {
     id: 2,
-    applicantId: '2023002',
-    applicantName: 'Jane Smith',
-    type: 'Personal',
-    startDate: '2023-02-05',
-    endDate: '2023-02-07',
-    reason: 'Family function',
-    status: 'Pending',
-    appliedOn: '2023-02-01',
+    applicantId: "2023002",
+    applicantName: "Jane Smith",
+    leaveType: "Personal",
+    dates: "2023-02-05 to 2023-02-07",
+    reason: "Family function",
+    appliedOn: "2023-02-01",
+    status: "PENDING",
   },
 ];
 
-function LeaveApplications() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('all');
+function statusBadge(status) {
+  switch (status) {
+    case "APPROVED":
+      return "bg-emerald-50 text-emerald-700 border-emerald-200";
+    case "REJECTED":
+      return "bg-rose-50 text-rose-700 border-rose-200";
+    default:
+      return "bg-amber-50 text-amber-700 border-amber-200";
+  }
+}
 
-  const filteredApplications = leaveApplications.filter((application) => {
-    const matchesSearch = 
-      application.applicantName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      application.applicantId.includes(searchTerm);
-    const matchesStatus = 
-      selectedStatus === 'all' || application.status.toLowerCase() === selectedStatus;
-    return matchesSearch && matchesStatus;
-  });
+function LeaveApplications() {
+  const { addToast } = useToast();
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [usingDemo, setUsingDemo] = useState(false);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      setUsingDemo(false);
+      try {
+        const res = await api.get("/leave-applications", {
+          withCredentials: true,
+          validateStatus: () => true,
+        });
+
+        if (cancelled) return;
+
+        if (res.status === 200 && res.data?.success) {
+          setRows(res.data.data);
+        } else {
+          setRows(DEMO);
+          setUsingDemo(true);
+          addToast("Failed to load leaves. Showing demo data.", "error");
+        }
+      } catch (err) {
+        if (cancelled) return;
+        console.error("Leave API error:", err);
+        setRows(DEMO);
+        setUsingDemo(true);
+        addToast("Failed to load leaves. Showing demo data.", "error");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [addToast]);
+
+  const filtered = useMemo(
+    () =>
+      rows.filter((r) => {
+        const text = `${r.applicantId} ${r.applicantName} ${r.reason}`
+          .toLowerCase();
+        const okSearch = text.includes(search.toLowerCase());
+        const okStatus =
+          statusFilter === "ALL" || r.status === statusFilter;
+        return okSearch && okStatus;
+      }),
+    [rows, search, statusFilter]
+  );
+
+  const handleDecision = async (rowId, decision) => {
+    if (usingDemo) {
+      addToast("Demo mode: not persisted.", "info");
+      setRows((prev) =>
+        prev.map((r) =>
+          r.id === rowId ? { ...r, status: decision } : r
+        )
+      );
+      return;
+    }
+
+    try {
+      const res = await api.post(
+        `/leave-applications/${rowId}/decision`,
+        { decision },
+        { withCredentials: true, validateStatus: () => true }
+      );
+
+      if (res.status === 200 && res.data?.success) {
+        setRows((prev) =>
+          prev.map((r) =>
+            r.id === rowId ? { ...r, status: decision } : r
+          )
+        );
+        addToast(
+          decision === "APPROVED"
+            ? "Leave approved."
+            : "Leave rejected.",
+          "success"
+        );
+      } else {
+        addToast("Failed to update leave.", "error");
+      }
+    } catch (err) {
+      console.error("Decision error:", err);
+      addToast("Failed to update leave.", "error");
+    }
+  };
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-8">
-      <div className="sm:flex sm:items-center">
-        <div className="sm:flex-auto">
-          <h1 className="text-xl font-semibold text-gray-900">Leave Applications</h1>
-          <p className="mt-2 text-sm text-gray-700">
-            View and manage leave applications from students and faculty
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-xl font-semibold text-gray-900">
+            Leave Applications
+          </h1>
+          <p className="mt-1 text-xs text-gray-500">
+            View and manage leave applications from students and faculty.
           </p>
         </div>
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-          <Link
-            to="/leave/apply"
-            className="inline-flex items-center justify-center rounded-md border border-transparent bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 sm:w-auto"
-          >
-            Apply for Leave
-          </Link>
-        </div>
+
+        <button
+          // TODO: wire to /leave-applications/new form
+          onClick={() => {}}
+          className="inline-flex items-center justify-center rounded-md border border-transparent bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-dark"
+        >
+          Apply for Leave
+        </button>
       </div>
 
-      <div className="mt-8">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 mb-4">
-          <div className="relative">
-            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
-            </div>
-            <input
-              type="text"
-              className="block w-full rounded-md border-0 py-1.5 pl-10 pr-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6"
-              placeholder="Search applicants..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div>
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary sm:text-sm sm:leading-6"
-            >
-              <option value="all">All Statuses</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-            </select>
-          </div>
+      {usingDemo && (
+        <div className="mb-3 text-xs px-3 py-2 rounded-md bg-amber-50 border border-amber-200 text-amber-700">
+          Failed to load leave applications. Showing demo data only.
         </div>
+      )}
 
-        <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
-          <table className="min-w-full divide-y divide-gray-300">
-            <thead className="bg-gray-50">
-              <tr>
-                <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
-                  Applicant ID
-                </th>
-                <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                  Applicant Name
-                </th>
-                <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                  Leave Type
-                </th>
-                <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                  Dates
-                </th>
-                <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                  Reason
-                </th>
-                <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                  Applied On
-                </th>
-                <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                  Status
-                </th>
-                <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
-                  <span className="sr-only">Actions</span>
-                </th>
+      <div className="flex flex-col sm:flex-row gap-3 mb-4">
+        <input
+          type="text"
+          placeholder="Search applicants..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+        />
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="w-full sm:w-40 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+        >
+          <option value="ALL">All Statuses</option>
+          <option value="PENDING">Pending</option>
+          <option value="APPROVED">Approved</option>
+          <option value="REJECTED">Rejected</option>
+        </select>
+      </div>
+
+      <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg bg-white">
+        <table className="min-w-full divide-y divide-gray-200 text-sm">
+          <thead className="bg-gray-50 text-xs text-gray-500">
+            <tr>
+              <th className="px-4 py-3 text-left font-semibold">
+                Applicant ID
+              </th>
+              <th className="px-3 py-3 text-left font-semibold">
+                Applicant Name
+              </th>
+              <th className="px-3 py-3 text-left font-semibold">
+                Leave Type
+              </th>
+              <th className="px-3 py-3 text-left font-semibold">
+                Dates
+              </th>
+              <th className="px-3 py-3 text-left font-semibold">
+                Reason
+              </th>
+              <th className="px-3 py-3 text-left font-semibold">
+                Applied On
+              </th>
+              <th className="px-4 py-3 text-left font-semibold">Status</th>
+              <th className="px-4 py-3 text-right font-semibold">
+                Decision
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200 bg-white">
+            {filtered.map((r) => (
+              <tr key={r.id}>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  {r.applicantId}
+                </td>
+                <td className="px-3 py-3 whitespace-nowrap">
+                  {r.applicantName}
+                </td>
+                <td className="px-3 py-3 whitespace-nowrap">
+                  {r.leaveType}
+                </td>
+                <td className="px-3 py-3 whitespace-nowrap">{r.dates}</td>
+                <td className="px-3 py-3">{r.reason}</td>
+                <td className="px-3 py-3 whitespace-nowrap">
+                  {r.appliedOn}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  <span
+                    className={
+                      "inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium " +
+                      statusBadge(r.status)
+                    }
+                  >
+                    {r.status}
+                  </span>
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-right text-xs">
+                  {r.status === "PENDING" ? (
+                    <>
+                      <button
+                        onClick={() => handleDecision(r.id, "APPROVED")}
+                        className="mr-3 font-medium text-emerald-600 hover:text-emerald-800"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => handleDecision(r.id, "REJECTED")}
+                        className="font-medium text-rose-600 hover:text-rose-800"
+                      >
+                        Reject
+                      </button>
+                    </>
+                  ) : (
+                    <span className="text-gray-400">No action</span>
+                  )}
+                </td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 bg-white">
-              {filteredApplications.map((application) => (
-                <tr key={application.id}>
-                  <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
-                    {application.applicantId}
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                    {application.applicantName}
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                    {application.type}
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                    {application.startDate} to {application.endDate}
-                  </td>
-                  <td className="px-3 py-4 text-sm text-gray-500">
-                    {application.reason}
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                    {application.appliedOn}
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-4 text-sm">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      application.status === 'Approved' 
-                        ? 'bg-green-100 text-green-800' 
-                        : application.status === 'Pending'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {application.status}
-                    </span>
-                  </td>
-                  <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                    {application.status === 'Pending' && (
-                      <>
-                        <button
-                          onClick={() => {
-                            // Approve leave functionality
-                            console.log(`Approved leave ${application.id}`);
-                          }}
-                          className="text-green-600 hover:text-green-900 mr-4"
-                        >
-                          Approve
-                        </button>
-                        <button
-                          onClick={() => {
-                            // Reject leave functionality
-                            console.log(`Rejected leave ${application.id}`);
-                          }}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          Reject
-                        </button>
-                      </>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+            {!filtered.length && !loading && (
+              <tr>
+                <td
+                  colSpan={8}
+                  className="px-4 py-6 text-center text-xs text-gray-400"
+                >
+                  No leave applications found.
+                </td>
+              </tr>
+            )}
+            {loading && (
+              <tr>
+                <td
+                  colSpan={8}
+                  className="px-4 py-6 text-center text-xs text-gray-400"
+                >
+                  Loading leave applications...
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
