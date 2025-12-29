@@ -70,7 +70,7 @@ import PaymentHistory from "./pages/students/PaymentHistory";
 import FeeReceipt from "./pages/students/FeeReceipt";
 import PaymentSuccessStudent from "./pages/students/PaymentSuccess";
 
-import Department from "./pages/faculty/Department";
+import Department from "./pages/faculty/department";
 import UniversityOverview from "./pages/faculty/UniversityOverview";
 
 function App() {
