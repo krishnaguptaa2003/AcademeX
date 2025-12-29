@@ -1,5 +1,4 @@
-// src/App.jsx (FIXED VERSION - with missing routes added)
-// src/App.jsx (FIXED VERSION - Added missing imports)
+// src/App.jsx
 import { Routes, Route, Navigate } from "react-router-dom";
 import MainLayout from "./components/layout/MainLayout";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -70,7 +69,7 @@ import PaymentHistory from "./pages/students/PaymentHistory";
 import FeeReceipt from "./pages/students/FeeReceipt";
 import PaymentSuccessStudent from "./pages/students/PaymentSuccess";
 
-import Department from "./pages/faculty/department";
+import Department from "./pages/faculty/Department";
 import UniversityOverview from "./pages/faculty/UniversityOverview";
 
 function App() {
