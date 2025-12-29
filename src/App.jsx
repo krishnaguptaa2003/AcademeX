@@ -1,5 +1,6 @@
-// src/App.jsx - CORRECTED IMPORTS
-
+// src/App.jsx (FIXED VERSION - with missing routes added)
+// src/App.jsx (FIXED VERSION - Added missing imports)
+import { Routes, Route, Navigate } from "react-router-dom";
 import MainLayout from "./components/layout/MainLayout";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -11,7 +12,6 @@ import Signup from "./pages/auth/Signup";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import VerifyOtp from "./pages/auth/VerifyOtp";
 import ResetPassword from "./pages/auth/ResetPassword";
-import Logout from "./pages/auth/Logout";
 
 // Dashboard / general
 import Home from "./pages/dashboard/Home";
@@ -30,19 +30,17 @@ import StudentForm from "./pages/students/StudentForm";
 import FacultyList from "./pages/faculty/FacultyList";
 import FacultyDetails from "./pages/faculty/FacultyDetails";
 import FacultyForm from "./pages/faculty/FacultyForm";
-import MySubjects from "./pages/faculty/MySubjects";
-import Department from "./pages/faculty/Department";  // Fixed: lowercase 'd' to uppercase 'D'
-import UniversityOverview from "./pages/faculty/UniversityOverview"; // Fixed: lowercase 'u' to uppercase 'U'
-import SubjectStudents from "./pages/faculty/SubjectStudents";
+import FacultyAttendance from "./pages/faculty/FacultyAttendance";
+import SubjectForm from "./pages/academics/SubjectForm";
+import FeeStructureForm from "./pages/finance/FeeStructureForm";
 
 // Academics
 import Attendance from "./pages/academics/Attendance";
-import Courses from "./pages/courses/Courses";  // Changed from "./pages/academics/Courses"
+import Courses from "./pages/academics/Courses";
 import Subjects from "./pages/academics/Subjects";
 import Results from "./pages/academics/Results";
 import PrintResult from "./pages/academics/PrintResult";
 import CourseForm from "./pages/academics/CourseForm";
-import SubjectForm from "./pages/academics/SubjectForm"; // Fixed: lowercase 's' to uppercase 'S'
 
 // Leave
 import LeaveApplications from "./pages/attendance/LeaveApplications";
@@ -52,8 +50,6 @@ import LeaveForm from "./pages/attendance/LeaveForm";
 import FeeManagement from "./pages/finance/FeeManagement";
 import CollectFee from "./pages/finance/CollectFee";
 import FeeStructure from "./pages/finance/FeeStructure";
-import FeeStructureForm from "./pages/finance/FeeStructureForm"; // Fixed: lowercase 'f' to uppercase 'F'
-import PaymentSuccess from "./pages/finance/PaymentSuccess";
 
 // Assignments
 import Assignments from "./pages/academics/Assignments";
@@ -61,6 +57,9 @@ import AssignmentForm from "./pages/academics/AssignmentForm";
 
 // Announcements
 import Announcements from "./pages/general/Announcements";
+
+// Faculty specific pages
+import MySubjects from "./pages/faculty/MySubjects";
 
 // Student specific pages
 import StudentAttendance from "./pages/students/Attendance";
@@ -70,6 +69,9 @@ import PayFee from "./pages/students/PayFee";
 import PaymentHistory from "./pages/students/PaymentHistory";
 import FeeReceipt from "./pages/students/FeeReceipt";
 import PaymentSuccessStudent from "./pages/students/PaymentSuccess";
+
+import Department from "./pages/faculty/Department";
+import UniversityOverview from "./pages/faculty/UniversityOverview";
 
 function App() {
   return (
@@ -127,12 +129,7 @@ function App() {
             <Route path="/courses" element={<ProtectedRoute roles={["ADMIN", "FACULTY", "STUDENT"]}><Courses /></ProtectedRoute>} />
             <Route path="/courses/new" element={<ProtectedRoute roles={["ADMIN", "FACULTY"]}><CourseForm /></ProtectedRoute>} />
             <Route path="/courses/:id/edit" element={<ProtectedRoute roles={["ADMIN", "FACULTY"]}><CourseForm /></ProtectedRoute>} />
-            
-            {/* Subjects Routes - Added the missing routes */}
             <Route path="/subjects" element={<ProtectedRoute roles={["ADMIN", "FACULTY"]}><Subjects /></ProtectedRoute>} />
-            <Route path="/subjects/new" element={<ProtectedRoute roles={["ADMIN"]}><SubjectForm /></ProtectedRoute>} />
-            <Route path="/subjects/:id/edit" element={<ProtectedRoute roles={["ADMIN"]}><SubjectForm /></ProtectedRoute>} />
-            
             <Route path="/results" element={<ProtectedRoute roles={["ADMIN", "FACULTY"]}><Results /></ProtectedRoute>} />
             <Route path="/results/:id/print" element={<ProtectedRoute roles={["ADMIN", "FACULTY"]}><PrintResult /></ProtectedRoute>} />
 
@@ -152,8 +149,6 @@ function App() {
             <Route path="/fee-management/collect" element={<ProtectedRoute roles={["ADMIN"]}><CollectFee /></ProtectedRoute>} />
             <Route path="/finance/collect/:studentId?" element={<ProtectedRoute roles={["ADMIN"]}><CollectFee /></ProtectedRoute>} />
             <Route path="/fee-structure" element={<ProtectedRoute roles={["ADMIN"]}><FeeStructure /></ProtectedRoute>} />
-            <Route path="/fee-structure/new" element={<ProtectedRoute roles={["ADMIN"]}><FeeStructureForm /></ProtectedRoute>} />
-            <Route path="/fee-structure/:id/edit" element={<ProtectedRoute roles={["ADMIN"]}><FeeStructureForm /></ProtectedRoute>} />
 
             {/* Student specific pages */}
             <Route path="/student/results" element={<ProtectedRoute roles={["STUDENT"]}><StudentResults /></ProtectedRoute>} />
@@ -161,11 +156,15 @@ function App() {
             <Route path="/student/payment-history" element={<ProtectedRoute roles={["STUDENT"]}><PaymentHistory /></ProtectedRoute>} />
             <Route path="/student/receipt/:paymentId" element={<ProtectedRoute roles={["STUDENT"]}><FeeReceipt /></ProtectedRoute>} />
             <Route path="/student/payment-success" element={<ProtectedRoute roles={["STUDENT"]}><PaymentSuccessStudent /></ProtectedRoute>} />
-            <Route path="/student/payfee/:feeId" element={<ProtectedRoute roles={["STUDENT"]}><PayFee /></ProtectedRoute>} />
 
-            {/* Faculty hierarchy pages */}
             <Route path="/faculty/department" element={<ProtectedRoute roles={["FACULTY"]}><Department /></ProtectedRoute>} />
             <Route path="/faculty/university" element={<ProtectedRoute roles={["FACULTY"]}><UniversityOverview /></ProtectedRoute>} />
+
+            <Route path="/student/payfee/:feeId" element={<ProtectedRoute roles={["STUDENT"]}><PayFee /></ProtectedRoute>} />
+            <Route path="/fee-structure/new" element={<ProtectedRoute roles={["ADMIN"]}><FeeStructureForm /></ProtectedRoute>} />
+            <Route path="/fee-structure/:id/edit" element={<ProtectedRoute roles={["ADMIN"]}><FeeStructureForm /></ProtectedRoute>} />
+            <Route path="/subjects/new" element={<ProtectedRoute roles={["ADMIN"]}><SubjectForm /></ProtectedRoute>} />
+            <Route path="/subjects/:id/edit" element={<ProtectedRoute roles={["ADMIN"]}><SubjectForm /></ProtectedRoute>} />
 
             {/* Any unknown path while logged-in → dashboard */}
             <Route path="*" element={<Navigate to="/" replace />} />
