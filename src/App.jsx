@@ -17,7 +17,7 @@ import Home from "./pages/dashboard/Home";
 import Reports from "./pages/reports/Reports";
 
 // Profile + FAQ
-import Profile from "./pages/profile/Profile";
+import Profile from "./pages/profile/profile";
 import Faq from "./pages/general/Faq";
 
 // Students (admin area)
@@ -69,7 +69,7 @@ import PaymentHistory from "./pages/students/PaymentHistory";
 import FeeReceipt from "./pages/students/FeeReceipt";
 import PaymentSuccessStudent from "./pages/students/PaymentSuccess";
 
-import Department from "./pages/faculty/Department";
+import Department from "./pages/faculty/department";
 import UniversityOverview from "./pages/faculty/UniversityOverview";
 
 function App() {
